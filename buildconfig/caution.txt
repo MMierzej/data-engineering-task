@@ -1,0 +1,21 @@
+Caution:
+
+While the containers are setting themselves up there is a time
+period (lasting about a second on the machine the build was tested
+on), in which the minio container stops MinIO, says it has finished
+setting up, and starts MinIO again (the logs of those operations can
+be found in the logs of the minio service).
+
+I've noticed, that during the execution of the above actions, if the
+MinIO server receives a lot of requests in a short period of time,
+it takes it very long to respond, even if the storage is empty and
+requests are only asking for a list of stored objects (not even
+requesting any downloads). This in effect makes my server not
+responsive as well, while the time period lasts.
+
+I have been able to reproduce the behavior at will during the described
+time period, and unable to reproduce the behavior outside the described
+time period.
+
+Please, keep that in mind when testing and using the endpoints provided
+by my server.

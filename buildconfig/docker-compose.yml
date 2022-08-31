@@ -1,0 +1,48 @@
+version: '3'
+services:
+  minio:
+    image: bitnami/minio:latest
+    hostname: minio
+    restart: always
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=password
+    volumes:
+      - minio:/data  # (instead of ./minio) fixes issues with access permissions
+    ports:
+      - 9000:9000
+      - 9001:9001
+
+  minio-create-bucket:
+    image: minio/mc
+    depends_on:
+      - minio
+    volumes:
+      - ../data:/src-data/source_data
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc config host add myminio http://minio:9000 admin password) do echo '...waiting...' && sleep 1; done;
+      /usr/bin/mc mb myminio/datalake;
+      /usr/bin/mc policy download myminio/datalake;
+      /usr/bin/mc cp --recursive /src-data/* myminio/datalake;
+      exit 0;
+      "
+
+  server:
+    image: server
+    build:
+      context: ..
+      dockerfile: buildconfig/server/Dockerfile
+    hostname: server
+    restart: always
+    ports:
+      - 8080:8080
+    entrypoint: >
+      /bin/bash -c "
+      /etc/init.d/cron start;
+      python /server/src/main.py;
+      exit 0;
+      "
+
+volumes:
+  minio:
